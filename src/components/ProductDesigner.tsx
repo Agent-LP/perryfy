@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Stage, Layer, Rect, Circle, Text, Transformer } from "react-konva";
+import { Stage, Layer, Rect, Circle, Text, Transformer, Image as KonvaImage } from "react-konva";
+import DesignToolbar from "./DesignToolbar";
+import useImage from "use-image";
 
 type Shape = {
   id: string;
-  type: "rect" | "circle" | "text";
+  type: "rect" | "circle" | "text" | "image";
   x: number;
   y: number;
   fill: string;
@@ -11,6 +13,31 @@ type Shape = {
   height?: number;
   radius?: number;
   text?: string;
+  imageUrl?: string;
+};
+
+// Componente para manejar imágenes en Konva
+const ImageShape: React.FC<{
+  shape: Shape;
+  isSelected: boolean;
+  onClick: (e: any) => void;
+  onDragEnd: (e: any) => void;
+}> = ({ shape, isSelected, onClick, onDragEnd }) => {
+  const [image] = useImage(shape.imageUrl || "");
+
+  return (
+    <KonvaImage
+      id={shape.id}
+      image={image}
+      x={shape.x}
+      y={shape.y}
+      width={shape.width}
+      height={shape.height}
+      draggable
+      onClick={onClick}
+      onDragEnd={onDragEnd}
+    />
+  );
 };
 
 const CanvasEditor: React.FC = () => {
@@ -29,16 +56,17 @@ const CanvasEditor: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Añadir figura
-  const addShape = (type: "rect" | "circle" | "text") => {
+  const addShape = (type: "rect" | "circle" | "text" | "image") => {
     const newShape: Shape = {
       id: Math.random().toString(36).substr(2, 9),
       type,
-      x: Math.random() * 300,
+      x: Math.random() * 300, 
       y: Math.random() * 300,
       fill: "#FF6B35",
       ...(type === "rect" ? { width: 100, height: 80 } : {}),
       ...(type === "circle" ? { radius: 50 } : {}),
       ...(type === "text" ? { text: "Edítame", width: 100 } : {}),
+      ...(type === "image" ? { imageUrl: "" } : {}),
     };
     setShapes([...shapes, newShape]);
   };
@@ -97,41 +125,55 @@ const CanvasEditor: React.FC = () => {
     setTextEdit({ isEditing: false, x: 0, y: 0, value: "", id: null });
   };
 
+  // Función para manejar la carga de imágenes
+  const handleImageUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.src = e.target?.result as string;
+      img.onload = () => {
+        // Calcular dimensiones manteniendo la proporción
+        let width = img.width;
+        let height = img.height;
+        const maxSize = 200;
+
+        if (width > height && width > maxSize) {
+          height = (height * maxSize) / width;
+          width = maxSize;
+        } else if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
+
+        const newShape: Shape = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: "image",
+          x: Math.random() * 300,
+          y: Math.random() * 300,
+          fill: "transparent",
+          width,
+          height,
+          imageUrl: e.target?.result as string,
+        };
+        setShapes([...shapes, newShape]);
+      };
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
-    <div className="flex screen  bg-gray-100">
-      {/* Barra lateral */}
-      <div className="w-64 bg-white p-4 shadow-md">
-        <button 
-          onClick={() => addShape("rect")}
-          className="mb-2 p-2 bg-blue-500 text-white rounded w-full"
-        >
-          Añadir Rectángulo
-        </button>
-        <button 
-          onClick={() => addShape("circle")}
-          className="mb-2 p-2 bg-blue-500 text-white rounded w-full"
-        >
-          Añadir Círculo
-        </button>
-        <button 
-          onClick={() => addShape("text")}
-          className="p-2 bg-blue-500 text-white rounded  w-full"
-        >
-          Añadir Texto
-        </button>
-      </div>
+    <div className="flex screen bg-gray-100">
+      <DesignToolbar onAddShape={addShape} onImageUpload={handleImageUpload} />
 
       {/* Canvas */}
       <div className="flex-1">
         <Stage
           ref={stageRef}
           width={window.innerWidth - 256}
-          height={window.innerHeight}
+          height={window.innerHeight - 80}
           onClick={handleStageClick}
         >
           <Layer>
-            {/* Renderizar todas las figuras */}
             {shapes.map((shape) => {
               const commonProps = {
                 id: shape.id,
@@ -173,7 +215,16 @@ const CanvasEditor: React.FC = () => {
                       onDblClick={(e) => handleTextDblClick(e, shape)}
                     />
                   );
-  
+                case "image":
+                  return (
+                    <ImageShape
+                      key={commonProps.id}
+                      shape={shape}
+                      isSelected={selectedId === shape.id}
+                      onClick={commonProps.onClick}
+                      onDragEnd={commonProps.onDragEnd}
+                    />
+                  );
                 default:
                   return null;
               }
