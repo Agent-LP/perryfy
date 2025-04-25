@@ -162,15 +162,15 @@ const CanvasEditor: React.FC = () => {
   };
 
   return (
+    <>
     <div className="flex screen bg-gray-100">
       <DesignToolbar onAddShape={addShape} onImageUpload={handleImageUpload} />
-
       {/* Canvas */}
       <div className="flex-1">
         <Stage
           ref={stageRef}
-          width={window.innerWidth - 256}
-          height={window.innerHeight - 80}
+          width={window.innerWidth - 192}
+          height={window.innerHeight }
           onClick={handleStageClick}
         >
           <Layer>
@@ -291,6 +291,7 @@ const CanvasEditor: React.FC = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
