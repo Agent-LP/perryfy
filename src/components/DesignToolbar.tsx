@@ -22,7 +22,7 @@ const DesignToolbar: React.FC<DesignToolbarProps> = ({ onAddShape, onImageUpload
   };
 
   return (
-    <div className="w-20 bg-white shadow-md flex flex-col h-screen">
+    <div className="w-20 bg-white shadow-md flex flex-col h-screen justify-">
       {/* Back button */}
       <div className="p-2 border-b border-gray-200">
         <button 

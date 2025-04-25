@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Stage, Layer, Rect, Circle, Text, Transformer, Image as KonvaImage } from "react-konva";
+import { Stage, Layer, Rect, Circle, Text, Transformer, Image as KonvaImage, Group } from "react-konva";
 import DesignToolbar from "./DesignToolbar";
 import useImage from "use-image";
 
@@ -55,13 +55,68 @@ const CanvasEditor: React.FC = () => {
   }>({ isEditing: false, x: 0, y: 0, value: "", id: null });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Cargar la imagen SVG de fondo
+  const [backgroundImage] = useImage("/src/utils/images/flat templates/p1adelante.svg");
+  
+  // Estado para mantener las dimensiones del Stage
+  const [stageDimensions, setStageDimensions] = useState({
+    width: window.innerWidth - 192,
+    height: window.innerHeight
+  });
+
+  // Definir dimensiones del área imprimible
+  const printableArea = {
+    width: 80,
+    height: 90
+  };
+
+  // Estado para elementos fuera del área
+  const [outOfBoundsShapes, setOutOfBoundsShapes] = useState<Set<string>>(new Set());
+
+  // Efecto para calcular las dimensiones del Stage
+  useEffect(() => {
+    const handleResize = () => {
+      setStageDimensions({
+        width: window.innerWidth - 192,
+        height: window.innerHeight
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Función para verificar si un elemento está fuera del área imprimible
+  const checkIfShapeIsOutOfBounds = (shape: Shape) => {
+    const shapeRight = shape.x + (shape.width || shape.radius || 0);
+    const shapeBottom = shape.y + (shape.height || shape.radius || 0);
+    
+    return (
+      shape.x < (stageDimensions.width - printableArea.width ) / 2||
+      shape.y < (stageDimensions.height - printableArea.height ) / 2 ||
+      shapeRight > (stageDimensions.width - printableArea.width ) / 2 + printableArea.width ||
+      shapeBottom > (stageDimensions.height - printableArea.height ) / 2 + printableArea.height
+    );
+  };
+
+  // Efecto para actualizar elementos fuera de bounds
+  useEffect(() => {
+    const outOfBounds = new Set<string>();
+    shapes.forEach((shape) => {
+      if (checkIfShapeIsOutOfBounds(shape)) {
+        outOfBounds.add(shape.id);
+      }
+    });
+    setOutOfBoundsShapes(outOfBounds);
+  }, [shapes]);
+
   // Añadir figura
   const addShape = (type: "rect" | "circle" | "text" | "image") => {
     const newShape: Shape = {
       id: Math.random().toString(36).substr(2, 9),
       type,
-      x: Math.random() * 300, 
-      y: Math.random() * 300,
+      x: ((stageDimensions.width - printableArea.width ) / 2)  , 
+      y: ((stageDimensions.height - printableArea.height ) / 2) ,
       fill: "#FF6B35",
       ...(type === "rect" ? { width: 100, height: 80 } : {}),
       ...(type === "circle" ? { radius: 50 } : {}),
@@ -169,73 +224,108 @@ const CanvasEditor: React.FC = () => {
       <div className="flex-1">
         <Stage
           ref={stageRef}
-          width={window.innerWidth - 192}
-          height={window.innerHeight }
+          width={stageDimensions.width}
+          height={stageDimensions.height}
           onClick={handleStageClick}
         >
           <Layer>
-            {shapes.map((shape) => {
-              const commonProps = {
-                id: shape.id,
-                x: shape.x,
-                y: shape.y,
-                fill: shape.fill,
-                draggable: true,
-                onClick: handleSelect,
-                onDragEnd: (e: any) => {
-                  setShapes(
-                    shapes.map((s) =>
-                      s.id === shape.id
-                        ? { ...s, x: e.target.x(), y: e.target.y() }
-                        : s
-                    )
-                  );
-                },
-              };
+            {/* Imagen SVG de fondo */}
+            {backgroundImage && (
+              <KonvaImage
+                image={backgroundImage}
+                width={backgroundImage.width * 0.1}
+                height={backgroundImage.height * 0.1}
+                x={(stageDimensions.width - backgroundImage.width * 0.1 ) / 2}
+                y={(stageDimensions.height - backgroundImage.height * 0.1 ) / 2}
+              />
+            )}
 
-              switch (shape.type) {
-                case "rect":
-                  return (
-                    <Rect
-                      key={commonProps.id}
-                      {...commonProps}
-                      width={shape.width}
-                      height={shape.height}
-                    />
-                  );
-                case "circle":
-                  return <Circle key={commonProps.id} {...commonProps} radius={shape.radius} />;
-                case "text":
-                  return (
-                    <Text
-                      key={commonProps.id}
-                      {...commonProps}
-                      text={shape.text}
-                      fontSize={20}
-                      onDblClick={(e) => handleTextDblClick(e, shape)}
-                    />
-                  );
-                case "image":
-                  return (
-                    <ImageShape
-                      key={commonProps.id}
-                      shape={shape}
-                      isSelected={selectedId === shape.id}
-                      onClick={commonProps.onClick}
-                      onDragEnd={commonProps.onDragEnd}
-                    />
-                  );
-                default:
-                  return null;
-              }
-            })}
+            {/* Área imprimible - borde visual */}
+            <Rect
+              x={(stageDimensions.width - printableArea.width ) / 2}
+              y={(stageDimensions.height - printableArea.height ) / 2}
+              width={printableArea.width}
+              height={printableArea.height}
+              stroke="#666"
+              strokeWidth={1}
+              dash={[5, 5]}
+            />
 
-            {/* Transformer (para resize/rotate) */}
+            {/* Grupo con clipFunc para el área imprimible */}
+            <Group
+              clipFunc={(ctx) => {
+                ctx.beginPath();
+                ctx.rect(
+                  (stageDimensions.width - printableArea.width ) / 2,
+                  (stageDimensions.height - printableArea.height ) / 2,
+                  printableArea.width,
+                  printableArea.height
+                );
+                ctx.closePath();
+              }}
+            >
+              {shapes.map((shape) => {
+                const commonProps = {
+                  id: shape.id,
+                  x: shape.x,
+                  y: shape.y,
+                  fill: outOfBoundsShapes.has(shape.id) ? "#FF000080" : shape.fill,
+                  draggable: true,
+                  onClick: handleSelect,
+                  onDragEnd: (e: any) => {
+                    const newX = e.target.x();
+                    const newY = e.target.y();
+                    setShapes(
+                      shapes.map((s) =>
+                        s.id === shape.id ? { ...s, x: newX, y: newY } : s
+                      )
+                    );
+                  },
+                };
+
+                switch (shape.type) {
+                  case "rect":
+                    return (
+                      <Rect
+                        key={commonProps.id}
+                        {...commonProps}
+                        width={shape.width}
+                        height={shape.height}
+                      />
+                    );
+                  case "circle":
+                    return <Circle key={commonProps.id} {...commonProps} radius={shape.radius} />;
+                  case "text":
+                    return (
+                      <Text
+                        key={commonProps.id}
+                        {...commonProps}
+                        text={shape.text}
+                        fontSize={20}
+                        onDblClick={(e) => handleTextDblClick(e, shape)}
+                      />
+                    );
+                  case "image":
+                    return (
+                      <ImageShape
+                        key={commonProps.id}
+                        shape={shape}
+                        isSelected={selectedId === shape.id}
+                        onClick={commonProps.onClick}
+                        onDragEnd={commonProps.onDragEnd}
+                      />
+                    );
+                  default:
+                    return null;
+                }
+              })}
+            </Group>
+
+            {/* Transformer fuera del grupo clipeado para que siempre sea visible */}
             {selectedId && (
               <Transformer
                 ref={transformerRef}
                 boundBoxFunc={(oldBox, newBox) => {
-                  // Limitar el tamaño mínimo
                   if (newBox.width < 5 || newBox.height < 5) {
                     return oldBox;
                   }
