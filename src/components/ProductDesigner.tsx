@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { Stage, Layer, Rect, Circle, Text, Transformer, Image as KonvaImage, Group } from "react-konva";
 import DesignToolbar from "./DesignToolbar";
 import useImage from "use-image";
+import EditorOptions from "./EditorOptions";
+import ViewSwitcher from "./ViewSwitcher";
 
 type Shape = {
   id: string;
@@ -43,6 +45,7 @@ const ImageShape: React.FC<{
 const CanvasEditor: React.FC = () => {
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'front' | 'back'>('front');
   const stageRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
   
@@ -55,8 +58,12 @@ const CanvasEditor: React.FC = () => {
   }>({ isEditing: false, x: 0, y: 0, value: "", id: null });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Cargar la imagen SVG de fondo
-  const [backgroundImage] = useImage("/src/utils/images/flat templates/p1adelante.svg");
+  // Cargar la imagen SVG de fondo basada en la vista actual
+  const [backgroundImage] = useImage(
+    currentView === 'front' 
+      ? "/src/utils/images/flat templates/p1adelante.svg"
+      : "/src/utils/images/flat templates/p1atras.svg"
+  );
   
   // Estado para mantener las dimensiones del Stage
   const [stageDimensions, setStageDimensions] = useState({
@@ -110,17 +117,39 @@ const CanvasEditor: React.FC = () => {
     setOutOfBoundsShapes(outOfBounds);
   }, [shapes]);
 
+  // Función auxiliar para obtener las coordenadas centrales del área imprimible
+  const getCenterCoordinates = () => {
+    const centerX = (stageDimensions.width - printableArea.width) / 2 + printableArea.width / 2;
+    const centerY = (stageDimensions.height - printableArea.height) / 2 + printableArea.height / 2;
+    return { x: centerX, y: centerY };
+  };
+
   // Añadir figura
   const addShape = (type: "rect" | "circle" | "text" | "image") => {
+    const center = getCenterCoordinates();
     const newShape: Shape = {
       id: Math.random().toString(36).substr(2, 9),
       type,
-      x: ((stageDimensions.width - printableArea.width ) / 2)  , 
-      y: ((stageDimensions.height - printableArea.height ) / 2) ,
+      x: center.x,
+      y: center.y,
       fill: "#FF6B35",
-      ...(type === "rect" ? { width: 100, height: 80 } : {}),
-      ...(type === "circle" ? { radius: 50 } : {}),
-      ...(type === "text" ? { text: "Edítame", width: 100 } : {}),
+      ...(type === "rect" ? { 
+        width: 100, 
+        height: 80,
+        x: center.x - 50, // Centrar el rectángulo
+        y: center.y - 40
+      } : {}),
+      ...(type === "circle" ? { 
+        radius: 50,
+        x: center.x,
+        y: center.y
+      } : {}),
+      ...(type === "text" ? { 
+        text: "Edítame", 
+        width: 100,
+        x: center.x - 38, // Centrar el texto
+        y: center.y - 10
+      } : {}),
       ...(type === "image" ? { imageUrl: "" } : {}),
     };
     setShapes([...shapes, newShape]);
@@ -187,10 +216,9 @@ const CanvasEditor: React.FC = () => {
       const img = new window.Image();
       img.src = e.target?.result as string;
       img.onload = () => {
-        // Calcular dimensiones manteniendo la proporción
+        const maxSize = 200;
         let width = img.width;
         let height = img.height;
-        const maxSize = 200;
 
         if (width > height && width > maxSize) {
           height = (height * maxSize) / width;
@@ -200,11 +228,12 @@ const CanvasEditor: React.FC = () => {
           height = maxSize;
         }
 
+        const center = getCenterCoordinates();
         const newShape: Shape = {
           id: Math.random().toString(36).substr(2, 9),
           type: "image",
-          x: Math.random() * 300,
-          y: Math.random() * 300,
+          x: center.x - width / 2, // Centrar la imagen
+          y: center.y - height / 2,
           fill: "transparent",
           width,
           height,
@@ -221,7 +250,7 @@ const CanvasEditor: React.FC = () => {
     <div className="flex screen bg-gray-100">
       <DesignToolbar onAddShape={addShape} onImageUpload={handleImageUpload} />
       {/* Canvas */}
-      <div className="flex-1">
+      <div className="flex-1 relative">
         <Stage
           ref={stageRef}
           width={stageDimensions.width}
@@ -233,17 +262,17 @@ const CanvasEditor: React.FC = () => {
             {backgroundImage && (
               <KonvaImage
                 image={backgroundImage}
-                width={backgroundImage.width * 0.1}
-                height={backgroundImage.height * 0.1}
-                x={(stageDimensions.width - backgroundImage.width * 0.1 ) / 2}
-                y={(stageDimensions.height - backgroundImage.height * 0.1 ) / 2}
+                width={currentView === 'front' ? backgroundImage.width * 0.1 : backgroundImage.width * 0.06}
+                height={currentView === 'front' ? backgroundImage.height * 0.1 : backgroundImage.height * 0.06}
+                x={(stageDimensions.width - (currentView === 'front' ? backgroundImage.width * 0.1 : backgroundImage.width * 0.06)) / 2}
+                y={(stageDimensions.height - (currentView === 'front' ? backgroundImage.height * 0.1 : backgroundImage.height * 0.06)) / 2}
               />
             )}
 
             {/* Área imprimible - borde visual */}
             <Rect
-              x={(stageDimensions.width - printableArea.width ) / 2}
-              y={(stageDimensions.height - printableArea.height ) / 2}
+              x={(stageDimensions.width - printableArea.width) / 2}
+              y={(stageDimensions.height - printableArea.height) / 2}
               width={printableArea.width}
               height={printableArea.height}
               stroke="#666"
@@ -256,8 +285,8 @@ const CanvasEditor: React.FC = () => {
               clipFunc={(ctx) => {
                 ctx.beginPath();
                 ctx.rect(
-                  (stageDimensions.width - printableArea.width ) / 2,
-                  (stageDimensions.height - printableArea.height ) / 2,
+                  (stageDimensions.width - printableArea.width) / 2,
+                  (stageDimensions.height - printableArea.height) / 2,
                   printableArea.width,
                   printableArea.height
                 );
@@ -335,6 +364,12 @@ const CanvasEditor: React.FC = () => {
             )}
           </Layer>
         </Stage>
+
+        <ViewSwitcher 
+          currentView={currentView} 
+          onViewChange={setCurrentView} 
+        />
+
         {/* Textarea para editar texto */}
         {textEdit.isEditing && (
           <textarea
@@ -380,6 +415,7 @@ const CanvasEditor: React.FC = () => {
           />
         )}
       </div>
+      <EditorOptions onColorChange={() => {}} onSizeChange={() => {}} currentColor={""} currentSize={""} />
     </div>
     </>
   );
