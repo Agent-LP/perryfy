@@ -4,19 +4,9 @@ import DesignToolbar from "./DesignToolbar";
 import useImage from "use-image";
 import EditorOptions from "./EditorOptions";
 import ViewSwitcher from "./ViewSwitcher";
-
-type Shape = {
-  id: string;
-  type: "rect" | "circle" | "text" | "image";
-  x: number;
-  y: number;
-  fill: string;
-  width?: number;
-  height?: number;
-  radius?: number;
-  text?: string;
-  imageUrl?: string;
-};
+import { defaultShapeProperties } from "../utils/data/colors";
+import { Shape } from "../types/shapes";
+import { exportToSVG } from "../services/exportService";
 
 // Componente para manejar imágenes en Konva
 const ImageShape: React.FC<{
@@ -49,6 +39,9 @@ const CanvasEditor: React.FC = () => {
   const stageRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
   
+  // Get the selected shape object
+  const selectedShape = shapes.find(shape => shape.id === selectedId);
+
   const [textEdit, setTextEdit] = useState<{
     isEditing: boolean;
     x: number;
@@ -67,14 +60,14 @@ const CanvasEditor: React.FC = () => {
   
   // Estado para mantener las dimensiones del Stage
   const [stageDimensions, setStageDimensions] = useState({
-    width: window.innerWidth - 192,
+    width: window.innerWidth - 300,
     height: window.innerHeight
   });
 
   // Definir dimensiones del área imprimible
   const printableArea = {
-    width: 80,
-    height: 90
+    width: 90,
+    height: 100
   };
 
   // Estado para elementos fuera del área
@@ -84,7 +77,7 @@ const CanvasEditor: React.FC = () => {
   useEffect(() => {
     const handleResize = () => {
       setStageDimensions({
-        width: window.innerWidth - 192,
+        width: window.innerWidth - 300,
         height: window.innerHeight
       });
     };
@@ -124,7 +117,66 @@ const CanvasEditor: React.FC = () => {
     return { x: centerX, y: centerY };
   };
 
-  // Añadir figura
+  // Manejador para cambios en las propiedades de la forma
+  const handleShapePropertyChange = (property: string, value: string | number | boolean) => {
+    if (!selectedId) return;
+
+    setShapes(shapes.map(shape => {
+      if (shape.id === selectedId) {
+        const updatedShape = { ...shape };
+        
+        // Manejar propiedades específicas
+        switch (property) {
+          case 'fill':
+            (updatedShape as any)[property] = value as string;
+            break;
+          case 'stroke':
+            (updatedShape as any)[property] = value as string;
+            break;
+          case 'strokeWidth':
+            (updatedShape as any)['strokeWidth'] = value as number;
+            break;
+          case 'cornerRadius':
+            if (shape.type === 'rect') {
+              (updatedShape as any)['cornerRadius'] = value as number;
+            }
+            break;
+          case 'fitToArea':
+            if (value === true) {
+              // Calcular dimensiones para ajustar al área imprimible
+              const printableAreaWidth = printableArea.width;
+              const printableAreaHeight = printableArea.height;
+              
+              if (shape.type === 'rect' || shape.type === 'image') {
+                const aspectRatio = (shape.width || 1) / (shape.height || 1);
+                if (aspectRatio > 1) {
+                  updatedShape.width = printableAreaWidth;
+                  updatedShape.height = printableAreaWidth / aspectRatio;
+                } else {
+                  updatedShape.height = printableAreaHeight;
+                  updatedShape.width = printableAreaHeight * aspectRatio;
+                }
+              } else if (shape.type === 'circle') {
+                const diameter = Math.min(printableAreaWidth, printableAreaHeight);
+                updatedShape.radius = diameter / 2;
+              }
+              
+              // Centrar en el área imprimible
+              const center = getCenterCoordinates();
+              updatedShape.x = center.x - (updatedShape.width || updatedShape.radius || 0) / 2;
+              updatedShape.y = center.y - (updatedShape.height || updatedShape.radius || 0) / 2;
+            }
+            (updatedShape as any)['fitToArea'] = value as boolean;
+            break;
+        }
+        return updatedShape;
+      }
+      return shape;
+    }));
+  };
+
+  //añadir figura
+  // Modificar addShape para incluir las propiedades por defecto
   const addShape = (type: "rect" | "circle" | "text" | "image") => {
     const center = getCenterCoordinates();
     const newShape: Shape = {
@@ -132,12 +184,15 @@ const CanvasEditor: React.FC = () => {
       type,
       x: center.x,
       y: center.y,
-      fill: "#FF6B35",
+      fill: defaultShapeProperties.fill,
+      stroke: defaultShapeProperties.stroke,
+      strokeWidth: defaultShapeProperties.strokeWidth,
       ...(type === "rect" ? { 
         width: 100, 
         height: 80,
-        x: center.x - 50, // Centrar el rectángulo
-        y: center.y - 40
+        x: center.x - 50, //centrar el rectangulo
+        y: center.y - 40,
+        cornerRadius: defaultShapeProperties.cornerRadius,
       } : {}),
       ...(type === "circle" ? { 
         radius: 50,
@@ -147,10 +202,15 @@ const CanvasEditor: React.FC = () => {
       ...(type === "text" ? { 
         text: "Edítame", 
         width: 100,
-        x: center.x - 38, // Centrar el texto
+        x: center.x - 38, //centrar el texto
         y: center.y - 10
       } : {}),
-      ...(type === "image" ? { imageUrl: "" } : {}),
+      ...(type === "image" ? { 
+        imageUrl: "",
+        width: 100,
+        height: 100,
+      } : {}),
+      fitToArea: false,
     };
     setShapes([...shapes, newShape]);
   };
@@ -232,17 +292,29 @@ const CanvasEditor: React.FC = () => {
         const newShape: Shape = {
           id: Math.random().toString(36).substr(2, 9),
           type: "image",
-          x: center.x - width / 2, // Centrar la imagen
+          x: center.x - width / 2, //centrar la imagen
           y: center.y - height / 2,
           fill: "transparent",
           width,
           height,
           imageUrl: e.target?.result as string,
+          stroke: defaultShapeProperties.stroke,
+          strokeWidth: defaultShapeProperties.strokeWidth,
+          fitToArea: false
         };
         setShapes([...shapes, newShape]);
       };
     };
     reader.readAsDataURL(file);
+  };
+
+  // Función para manejar la exportación
+  const handleExport = () => {
+    const svgData = exportToSVG(shapes, printableArea, stageRef);
+    if (svgData) {
+      console.log('SVG generado exitosamente');
+      // Aquí posteriormente añadiremos la lógica para mostrar la preview
+    }
   };
 
   return (
@@ -320,10 +392,21 @@ const CanvasEditor: React.FC = () => {
                         {...commonProps}
                         width={shape.width}
                         height={shape.height}
+                        cornerRadius={shape.cornerRadius}
+                        stroke={shape.stroke}
+                        strokeWidth={shape.strokeWidth}
                       />
                     );
                   case "circle":
-                    return <Circle key={commonProps.id} {...commonProps} radius={shape.radius} />;
+                    return (
+                      <Circle 
+                        key={commonProps.id} 
+                        {...commonProps} 
+                        radius={shape.radius}
+                        stroke={shape.stroke}
+                        strokeWidth={shape.strokeWidth}
+                      />
+                    );
                   case "text":
                     return (
                       <Text
@@ -415,7 +498,15 @@ const CanvasEditor: React.FC = () => {
           />
         )}
       </div>
-      <EditorOptions onColorChange={() => {}} onSizeChange={() => {}} currentColor={""} currentSize={""} />
+      <EditorOptions 
+        onColorChange={() => {}} 
+        onSizeChange={() => {}} 
+        currentColor={""} 
+        currentSize={""} 
+        selectedShape={selectedShape || null}
+        onShapePropertyChange={handleShapePropertyChange}
+        onExport={handleExport}
+      />
     </div>
     </>
   );

@@ -51,12 +51,12 @@ const VariantsAndLayers: React.FC<VariantsAndLayersProps> = ({
       {/* Size Selection */}
       <div>
         <h3 className="text-sm font-medium text-gray-900 mb-3">Sizes</h3>
-        <div className="flex gap-2">
+        <div className="flex  flex-wrap gap-2 items-center justify-center">
           {AVAILABLE_SIZES.map((size) => (
             <button
               key={size}
               onClick={() => onSizeChange(size)}
-              className={`px-3 py-1 text-sm font-medium rounded ${
+              className={`px-3 py-1 text-sm font-medium rounded w-12 ${
                 currentSize === size
                   ? 'bg-olive-600 text-white'
                   : 'bg-gray-100 text-gray-800 hover:bg-gray-200'

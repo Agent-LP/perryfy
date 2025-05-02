@@ -1,20 +1,39 @@
 import React, { useState } from 'react';
 import VariantsAndLayers from './VariantsAndLayers';
+import PropertiesPanel from './PropertiesPanel';
+import { defaultShapeProperties } from '../utils/data/colors';
+import { Shape } from '../types/shapes';
 
 type EditorOptionsProps = {
   onColorChange: (color: string) => void;
   onSizeChange: (size: string) => void;
   currentColor: string;
   currentSize: string;
+  selectedShape: Shape | null;
+  onShapePropertyChange?: (property: string, value: string | number | boolean) => void;
+  onExport: () => void;
 }
 
 const EditorOptions: React.FC<EditorOptionsProps> = ({
   onColorChange,
   onSizeChange,
   currentColor,
-  currentSize
+  currentSize,
+  selectedShape,
+  onShapePropertyChange,
+  onExport
 }) => {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview' | 'variants'>('edit');
+
+  const showPropertiesPanel = activeTab === 'edit' && selectedShape && onShapePropertyChange;
+
+  // Manejar el cambio de tab
+  const handleTabChange = (tab: 'edit' | 'preview' | 'variants') => {
+    setActiveTab(tab);
+    if (tab === 'preview') {
+      onExport();
+    }
+  };
 
   return (
     <div className="w-80 border-l border-gray-200 bg-white">
@@ -26,7 +45,7 @@ const EditorOptions: React.FC<EditorOptionsProps> = ({
               ? 'text-olive-600 border-b-2 border-olive-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}
-          onClick={() => setActiveTab('edit')}
+          onClick={() => handleTabChange('edit')}
         >
           Edit
         </button>
@@ -36,7 +55,7 @@ const EditorOptions: React.FC<EditorOptionsProps> = ({
               ? 'text-olive-600 border-b-2 border-olive-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}
-          onClick={() => setActiveTab('preview')}
+          onClick={() => handleTabChange('preview')}
         >
           Preview
         </button>
@@ -46,7 +65,7 @@ const EditorOptions: React.FC<EditorOptionsProps> = ({
               ? 'text-olive-600 border-b-2 border-olive-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}
-          onClick={() => setActiveTab('variants')}
+          onClick={() => handleTabChange('variants')}
         >
           Variants
         </button>
@@ -62,11 +81,20 @@ const EditorOptions: React.FC<EditorOptionsProps> = ({
             currentSize={currentSize}
           />
         )}
-        {activeTab === 'edit' && (
-          <div className="text-center text-gray-500">Edit options here</div>
-        )}
+        {showPropertiesPanel ? (
+          <PropertiesPanel
+            selectedShape={selectedShape}
+            onPropertyChange={onShapePropertyChange}
+          />
+        ) : activeTab === 'edit' ? (
+          <div className="text-center text-gray-500">
+            {selectedShape ? 'Loading properties...' : 'Select a shape to edit its properties'}
+          </div>
+        ) : null}
         {activeTab === 'preview' && (
-          <div className="text-center text-gray-500">Preview options here</div>
+          <div className="text-center text-gray-500">
+            Preview will be shown here
+          </div>
         )}
       </div>
     </div>
