@@ -73,7 +73,7 @@ const DesignToolbar: React.FC<DesignToolbarProps> = ({ onAddShape, onImageUpload
 
         <button
           onClick={() => onAddShape('text')}
-          className="w-16 h-16 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center text-base font-semibold transition-colors duration-200"
+          className="w-9 h-9 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center text-base font-semibold transition-colors duration-200"
           aria-label="Add text"
         >
           T

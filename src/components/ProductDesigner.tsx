@@ -6,7 +6,8 @@ import EditorOptions from "./EditorOptions";
 import ViewSwitcher from "./ViewSwitcher";
 import { defaultShapeProperties } from "../utils/data/colors";
 import { Shape } from "../types/shapes";
-import { exportToSVG } from "../services/exportService";
+import { exportToPNG } from "../services/exportImageService";
+import { uploadImageToCloudinary } from "../services/cloudinaryService";
 
 // Componente para manejar imágenes en Konva
 const ImageShape: React.FC<{
@@ -309,12 +310,23 @@ const CanvasEditor: React.FC = () => {
   };
 
   // Función para manejar la exportación
-  const handleExport = () => {
-    const svgData = exportToSVG(shapes, printableArea, stageRef);
-    if (svgData) {
-      console.log('SVG generado exitosamente');
+  const handleExport = async () => {
+    const pngData = exportToPNG(shapes, printableArea, stageRef);
+    if (pngData) {
+      console.log('Imagen generado exitosamente');
       // Aquí posteriormente añadiremos la lógica para mostrar la preview
+      console.log('PNG data:', pngData);
+
+      //Sube la imagen a Cloudinary
+      const imageUrl = await uploadImageToCloudinary(pngData);
+      if (imageUrl) { 
+        console.log('Imagen subida a Cloudinary:', imageUrl);
+        return imageUrl; // Retorna el la url del SVG generado
+      }
+    } else {
+      console.error('SVG data is null. Cannot upload to Cloudinary.');
     }
+    
   };
 
   return (

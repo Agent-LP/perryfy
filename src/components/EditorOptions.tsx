@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import VariantsAndLayers from './VariantsAndLayers';
 import PropertiesPanel from './PropertiesPanel';
-import { defaultShapeProperties } from '../utils/data/colors';
+import { createMockup, obtainMockupUrl } from '../services/printFulService'; // Importa la función
 import { Shape } from '../types/shapes';
+import { timeout } from '../utils/functions/timeout';
 
 type EditorOptionsProps = {
   onColorChange: (color: string) => void;
@@ -11,8 +12,8 @@ type EditorOptionsProps = {
   currentSize: string;
   selectedShape: Shape | null;
   onShapePropertyChange?: (property: string, value: string | number | boolean) => void;
-  onExport: () => void;
-}
+  onExport: () => string; // Cambia el tipo de retorno de `onExport` para devolver el SVG
+};
 
 const EditorOptions: React.FC<EditorOptionsProps> = ({
   onColorChange,
@@ -21,17 +22,30 @@ const EditorOptions: React.FC<EditorOptionsProps> = ({
   currentSize,
   selectedShape,
   onShapePropertyChange,
-  onExport
+  onExport,
 }) => {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview' | 'variants'>('edit');
+  const [mockupUrls, setMockupUrls] = useState<string[]>([]); // Estado para guardar los mockups como una lista de strings
 
   const showPropertiesPanel = activeTab === 'edit' && selectedShape && onShapePropertyChange;
 
-  // Manejar el cambio de tab
-  const handleTabChange = (tab: 'edit' | 'preview' | 'variants') => {
+  const handleTabChange = async (tab: 'edit' | 'preview' | 'variants') => {
     setActiveTab(tab);
+
     if (tab === 'preview') {
-      onExport();
+      try {
+        const imageData = await onExport(); // Asegúrate de que onExport devuelva un string
+        console.log('El imageData en EditorOptions es:', imageData);
+
+        // Aquí puedes llamar a la función de la API para crear el mockup
+        const result = await createMockup(imageData); // Llama a la API
+        await timeout(3000); // Espera 3 segundos antes de continuar
+        const mockupUrlsFromPrintify = await obtainMockupUrl(result); // Llama a la API para obtener la URL del mockup
+        setMockupUrls(mockupUrlsFromPrintify); // Guarda la URL del mockup
+        console.log('El mockup generado es: ', mockupUrlsFromPrintify);
+      } catch (error) {
+        console.error('Error al generar el mockup:', error);
+      }
     }
   };
 
@@ -92,8 +106,14 @@ const EditorOptions: React.FC<EditorOptionsProps> = ({
           </div>
         ) : null}
         {activeTab === 'preview' && (
-          <div className="text-center text-gray-500">
-            Preview will be shown here
+          <div className="text-center">
+            {mockupUrls.length > 0 ? (
+              mockupUrls.map((url, index) => (
+          <img key={index} src={url} alt={`Mockup Preview ${index + 1}`} className="w-full h-auto mb-4" />
+              ))
+            ) : (
+              <div className="text-gray-500">Generating mockup...</div>
+            )}
           </div>
         )}
       </div>
@@ -101,4 +121,4 @@ const EditorOptions: React.FC<EditorOptionsProps> = ({
   );
 };
 
-export default EditorOptions; 
+export default EditorOptions;
