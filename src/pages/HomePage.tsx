@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import HomeHeader from '../components/HomeHeader';
 import ProductCard from '../components/ProductCard';
-import Button from '../components/generic/Button';
 import { getAllProducts, Product } from '../services/productService';
 
 // Hardcodear usuario y categorías por ahora

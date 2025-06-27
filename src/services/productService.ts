@@ -7,11 +7,8 @@ export interface Product {
   originalPrice?: number;
   image: string;
   category: string;
-  rating?: number;
-  reviewCount?: number;
   inStock?: boolean;
-  isNew?: boolean;
-  isOnSale?: boolean;
+
 }
 
 export const getAllProducts = async (): Promise<Product[]> => {
