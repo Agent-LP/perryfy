@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { commonColors, defaultShapeProperties } from '../utils/data/colors';
+import { commonColors, defaultShapeProperties } from '../../utils/data/colors';
+import { FONT_LIST } from '../../utils/data/fonts';
 
 interface PropertiesPanelProps {
   selectedShape: {
+    type: string;
     fill: string | undefined;
     stroke: string;
     strokeWidth: number;
     cornerRadius?: number;
+    fontFamily?: string;
     fitToArea: boolean;
   } | null;
   onPropertyChange: (property: string, value: string | number | boolean) => void;
@@ -21,16 +24,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   const [strokeColor, setStrokeColor] = useState(defaultShapeProperties.stroke);
   const [strokeWidth, setStrokeWidth] = useState(defaultShapeProperties.strokeWidth);
   const [cornerRadius, setCornerRadius] = useState(defaultShapeProperties.cornerRadius);
-
-  // Actualizar estados locales cuando cambia la forma seleccionada
-  useEffect(() => {
-    if (selectedShape) {
-      setFillColor(selectedShape.fill || defaultShapeProperties.fill);
-      setStrokeColor(selectedShape.stroke || defaultShapeProperties.stroke);
-      setStrokeWidth(selectedShape.strokeWidth || defaultShapeProperties.strokeWidth);
-      setCornerRadius(selectedShape.cornerRadius ?? defaultShapeProperties.cornerRadius);
-    }
-  }, [selectedShape]);
+  const [fontFamily, setFontFamily] = useState(defaultShapeProperties.fontFamily);
 
   // Si no hay forma seleccionada, mostrar mensaje
   if (!selectedShape) {
@@ -40,6 +34,18 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       </div>
     );
   }
+
+  // Actualizar estados locales cuando cambia la forma seleccionada
+  useEffect(() => {
+    if (selectedShape) {
+      setFillColor(selectedShape.fill || defaultShapeProperties.fill);
+      setStrokeColor(selectedShape.stroke || defaultShapeProperties.stroke);
+      setStrokeWidth(selectedShape.strokeWidth || defaultShapeProperties.strokeWidth);
+      setCornerRadius(selectedShape.cornerRadius ?? defaultShapeProperties.cornerRadius);
+      setFontFamily(selectedShape.fontFamily || defaultShapeProperties.fontFamily);
+    }
+  }, [selectedShape]);
+  
 
   // Manejadores para actualizar los estados locales y propagar los cambios
   const handleFillChange = (value: string) => {
@@ -62,10 +68,15 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
     onPropertyChange('cornerRadius', value);
   };
 
+  const handleFontFamilyChange = (value: string) => {
+    setFontFamily(value);
+    onPropertyChange('fontFamily', value);
+  };
+
   return (
     <div className="p-4 space-y-6">
       {/* Fill Color Section */}
-      <div className="space-y-2">
+      {(selectedShape.type == "rect" || selectedShape.type == "circle" || selectedShape.type == "text") && <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">Fill Color</label>
         <div className="grid grid-cols-6 gap-2">
           {commonColors.map((color) => (
@@ -86,10 +97,10 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           className="mt-1 block w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
           placeholder="#000000"
         />
-      </div>
+      </div>}
 
       {/* Border Color Section */}
-      <div className="space-y-2">
+      {(selectedShape.type == "rect" || selectedShape.type == "circle") && <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">Border Color</label>
         <div className="grid grid-cols-6 gap-2">
           {commonColors.map((color) => (
@@ -110,10 +121,30 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           className="mt-1 block w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
           placeholder="#000000"
         />
-      </div>
+      </div>}
+
+      
+
+      {/* Font Family Section */}
+      {selectedShape.fontFamily && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Font Family</label>
+          <select
+            value={fontFamily}
+            onChange={(e) => handleFontFamilyChange(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+          >
+            {FONT_LIST.map((font) => (
+              <option key={font} value={font}>
+                {font}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Border Width Section */}
-      <div className="space-y-2">
+      {(selectedShape.type == "rect" || selectedShape.type == "circle" ) &&  <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">Border Width</label>
         <div className="flex items-center space-x-2">
           <input
@@ -126,7 +157,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           />
           <span className="text-sm text-gray-500 w-8">{strokeWidth}</span>
         </div>
-      </div>
+      </div>}
 
       {/* Corner Radius Section */}
       {selectedShape.cornerRadius !== undefined && (
@@ -147,7 +178,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       )}
 
       {/* Fit to Area Toggle */}
-      <div className="flex items-center justify-between">
+      {(selectedShape.type == "rect" || selectedShape.type == "circle" || selectedShape.type == "image") && <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700">Fit to Area</span>
         <button
           className={`relative inline-flex h-6 w-11 items-center rounded-full ${
@@ -161,7 +192,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             }`}
           />
         </button>
-      </div>
+      </div>}
     </div>
   );
 };

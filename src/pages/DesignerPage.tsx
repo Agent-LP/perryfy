@@ -1,4 +1,4 @@
-import ProductDesigner from "../components/ProductDesigner";
+import ProductDesigner from "../components/productDesignerComponents/ProductDesigner";
 
 export const DesignerPage = () => {
   return (

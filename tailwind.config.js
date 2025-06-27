@@ -5,7 +5,20 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        orange: {
+          perry: '#FF6B35',
+        },
+        blue: {
+          perryDark: '#004E89',
+          perryLight: '#3A86FF',
+        },
+        gray: {
+          perryDark: '#2D3436',
+        },
+      },
+    },
   },
   plugins: [],
 }

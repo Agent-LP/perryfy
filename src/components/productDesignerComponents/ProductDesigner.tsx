@@ -4,10 +4,13 @@ import DesignToolbar from "./DesignToolbar";
 import useImage from "use-image";
 import EditorOptions from "./EditorOptions";
 import ViewSwitcher from "./ViewSwitcher";
-import { defaultShapeProperties } from "../utils/data/colors";
-import { Shape } from "../types/shapes";
-import { exportToPNG } from "../services/exportImageService";
-import { uploadImageToCloudinary } from "../services/cloudinaryService";
+import { defaultShapeProperties } from "../../utils/data/colors";
+import { Shape } from "../../types/shapes";
+import { exportToPNG } from "../../services/exportImageService";
+import { uploadImageToCloudinary } from "../../services/cloudinaryService";
+import { changeFont } from "../../utils/functions/changeFont";
+import { onwheel } from "../../utils/functions/onWheel";
+import ResetZoomButton from "./ResetZoomButton";
 
 // Componente para manejar imágenes en Konva
 const ImageShape: React.FC<{
@@ -15,7 +18,7 @@ const ImageShape: React.FC<{
   isSelected: boolean;
   onClick: (e: any) => void;
   onDragEnd: (e: any) => void;
-}> = ({ shape, isSelected, onClick, onDragEnd }) => {
+}> = ({ shape, /*isSelected,*/ onClick, onDragEnd }) => {
   const [image] = useImage(shape.imageUrl || "");
 
   return (
@@ -34,14 +37,30 @@ const ImageShape: React.FC<{
 };
 
 const CanvasEditor: React.FC = () => {
-  const [shapes, setShapes] = useState<Shape[]>([]);
+  const [shapes, setShapes] = useState<{ front: Shape[]; back: Shape[] }>({
+    front: [],
+    back: [],
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'front' | 'back'>('front');
+  const [currentSize, setCurrentSize] = useState<string>('M');
+  const [currentFont, setCurrentFont] = useState<string>('Arial');
+  const [fontLoaded, setFontLoaded] = useState(false);
+  
+  const currentShapes = shapes[currentView];
+  const setCurrentShapes = (newShapes: Shape[]) => {
+  setShapes((prev) => ({
+      ...prev,
+      [currentView]: newShapes,
+    }));
+  };
+
+  
   const stageRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
   
   // Get the selected shape object
-  const selectedShape = shapes.find(shape => shape.id === selectedId);
+  const selectedShape = currentShapes.find(shape => shape.id === selectedId);
 
   const [textEdit, setTextEdit] = useState<{
     isEditing: boolean;
@@ -72,7 +91,7 @@ const CanvasEditor: React.FC = () => {
   };
 
   // Estado para elementos fuera del área
-  const [outOfBoundsShapes, setOutOfBoundsShapes] = useState<Set<string>>(new Set());
+  const [/*outOfBoundsShapes*/, setOutOfBoundsShapes] = useState<Set<string>>(new Set());
 
   // Efecto para calcular las dimensiones del Stage
   useEffect(() => {
@@ -80,13 +99,34 @@ const CanvasEditor: React.FC = () => {
       setStageDimensions({
         width: window.innerWidth - 300,
         height: window.innerHeight
-      });
-    };
-
+        });
+      };
+      
     window.addEventListener('resize', handleResize);
+    console.log('Dimensiones del Stage:', stageDimensions);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => { 
+
+    console.log('x de la forma seleccionada:', selectedShape?.x);
+    console.log('y de la forma seleccionada:', selectedShape?.y);
+    console.log('width de la forma seleccionada:', selectedShape?.width);
+    console.log('height de la forma seleccionada:', selectedShape?.height);
+
+    console.log('medidas del area imprimible:', printableArea);
+  }, [selectedShape]);
+
+  // Efecto para cargar la fuente
+  // Cambia la fuente al seleccionar una diferente
+  useEffect(() => {
+    console.log("current font: ", currentFont);
+    console.log("font cargado?: ", fontLoaded);
+    changeFont(currentFont, setFontLoaded);
+    console.log("font cargado? 2: ", fontLoaded);
+  }, [currentFont]);
+
+  
   // Función para verificar si un elemento está fuera del área imprimible
   const checkIfShapeIsOutOfBounds = (shape: Shape) => {
     const shapeRight = shape.x + (shape.width || shape.radius || 0);
@@ -103,13 +143,13 @@ const CanvasEditor: React.FC = () => {
   // Efecto para actualizar elementos fuera de bounds
   useEffect(() => {
     const outOfBounds = new Set<string>();
-    shapes.forEach((shape) => {
+    currentShapes.forEach((shape) => {
       if (checkIfShapeIsOutOfBounds(shape)) {
         outOfBounds.add(shape.id);
       }
     });
     setOutOfBoundsShapes(outOfBounds);
-  }, [shapes]);
+  }, [currentShapes]);
 
   // Función auxiliar para obtener las coordenadas centrales del área imprimible
   const getCenterCoordinates = () => {
@@ -121,59 +161,99 @@ const CanvasEditor: React.FC = () => {
   // Manejador para cambios en las propiedades de la forma
   const handleShapePropertyChange = (property: string, value: string | number | boolean) => {
     if (!selectedId) return;
+    console.log('---------------------------------------')  
+    setShapes(prev => {
+      // Crear una COPIA PROFUNDA del estado anterior
+      const newShapes = {
+        front: [...prev.front],
+        back: [...prev.back]
+      };
+      
+      newShapes[currentView]=newShapes[currentView].map(shape => {
+        if (shape.id === selectedId) {
+          const updatedShape = { ...shape };
+          
+          // Manejar propiedades específicas
+          switch (property) {
+            case 'fill':
+              (updatedShape as Shape)[property] = value as string;
+              console.log('Color de relleno actualizado:', value);
+              console.log('nueva forma:', updatedShape);
+              break;
+            case 'stroke':
+              (updatedShape as Shape)[property] = value as string;
+              console.log('Color de trazo actualizado:', value);
+              console.log('nueva forma:', updatedShape);
 
-    setShapes(shapes.map(shape => {
-      if (shape.id === selectedId) {
-        const updatedShape = { ...shape };
-        
-        // Manejar propiedades específicas
-        switch (property) {
-          case 'fill':
-            (updatedShape as any)[property] = value as string;
-            break;
-          case 'stroke':
-            (updatedShape as any)[property] = value as string;
-            break;
-          case 'strokeWidth':
-            (updatedShape as any)['strokeWidth'] = value as number;
-            break;
-          case 'cornerRadius':
-            if (shape.type === 'rect') {
-              (updatedShape as any)['cornerRadius'] = value as number;
-            }
-            break;
-          case 'fitToArea':
-            if (value === true) {
-              // Calcular dimensiones para ajustar al área imprimible
-              const printableAreaWidth = printableArea.width;
-              const printableAreaHeight = printableArea.height;
-              
-              if (shape.type === 'rect' || shape.type === 'image') {
-                const aspectRatio = (shape.width || 1) / (shape.height || 1);
-                if (aspectRatio > 1) {
-                  updatedShape.width = printableAreaWidth;
-                  updatedShape.height = printableAreaWidth / aspectRatio;
-                } else {
-                  updatedShape.height = printableAreaHeight;
-                  updatedShape.width = printableAreaHeight * aspectRatio;
+              break;
+            case 'strokeWidth':
+              (updatedShape as Shape)['strokeWidth'] = value as number;
+              console.log('Ancho de trazo actualizado:', value);
+              console.log('nueva forma:', updatedShape);
+
+              break;
+            case 'cornerRadius':
+              if (shape.type === 'rect') {
+                (updatedShape as Shape)['cornerRadius'] = value as number;
+                console.log('Radio de esquina actualizado:', value);
+              console.log('nueva forma:', updatedShape);
+
+              }
+              break;
+           case 'fitToArea':
+              if (value === true) {
+                // Calcular dimensiones para ajustar al área imprimible
+                const printableAreaWidth = printableArea.width;
+                const printableAreaHeight = printableArea.height;
+                
+                if (shape.type === 'rect' || shape.type === 'image') {
+                  const aspectRatio = (shape.width || 1) / (shape.height || 1);
+                  if (aspectRatio > 1) {
+                    updatedShape.width = printableAreaWidth;
+                    updatedShape.height = printableAreaWidth / aspectRatio;
+                  } else {
+                    updatedShape.height = printableAreaHeight;
+                    updatedShape.width = printableAreaHeight * aspectRatio;
+                  }
+                } else if (shape.type === 'circle') {
+                  const diameter = Math.min(printableAreaWidth, printableAreaHeight);
+                  updatedShape.radius = diameter / 2;
                 }
-              } else if (shape.type === 'circle') {
-                const diameter = Math.min(printableAreaWidth, printableAreaHeight);
-                updatedShape.radius = diameter / 2;
+                
+                // Centrar en el área imprimible
+                const center = getCenterCoordinates();
+                updatedShape.x = center.x - (updatedShape.width || updatedShape.radius || 0) / 2;
+                updatedShape.y = center.y - (updatedShape.height || updatedShape.radius || 0) / 2;
+                console.log('Ajustando a área imprimible:', updatedShape);
+                console.log('nueva forma:', updatedShape);
+
               }
               
-              // Centrar en el área imprimible
-              const center = getCenterCoordinates();
-              updatedShape.x = center.x - (updatedShape.width || updatedShape.radius || 0) / 2;
-              updatedShape.y = center.y - (updatedShape.height || updatedShape.radius || 0) / 2;
-            }
-            (updatedShape as any)['fitToArea'] = value as boolean;
-            break;
+              console.log('Ajustar a área:', value);
+              console.log('nueva forma:', updatedShape);
+              // Si el valor es false, no se ajusta a la área imprimible
+              // Actualizar la propiedad fitToArea
+              (updatedShape as Shape)['fitToArea'] = value as boolean;
+              break; 
+
+            case 'fontFamily':
+                (updatedShape as Shape)[property] = value as string;
+                setCurrentFont(value as string);
+                console.log('Familia de fuente actualizada:', value);
+                console.log('nueva forma:', updatedShape);
+
+                break;
+          }
+          
+          console.log('updatedShape a setear:', updatedShape);
+          return updatedShape;
         }
-        return updatedShape;
-      }
-      return shape;
-    }));
+        console.log('shape:', shape); 
+        return shape;
+      });
+      return newShapes;
+    });
+    console.log('Propiedad actualizada:', property, 'Nuevo valor:', value);
   };
 
   //añadir figura
@@ -202,6 +282,7 @@ const CanvasEditor: React.FC = () => {
       } : {}),
       ...(type === "text" ? { 
         text: "Edítame", 
+        fontFamily: currentFont,
         width: 100,
         x: center.x - 38, //centrar el texto
         y: center.y - 10
@@ -213,7 +294,8 @@ const CanvasEditor: React.FC = () => {
       } : {}),
       fitToArea: false,
     };
-    setShapes([...shapes, newShape]);
+    setCurrentShapes([...currentShapes, newShape]);
+
   };
 
   // Actualizar el Transformer cuando se selecciona una figura
@@ -261,8 +343,8 @@ const CanvasEditor: React.FC = () => {
   // Guardar el texto editado
   const handleTextareaBlur = () => {
     if (textEdit.id) {
-      setShapes(
-        shapes.map((shape) =>
+      setCurrentShapes(
+        currentShapes.map((shape) =>
           shape.id === textEdit.id ? { ...shape, text: textEdit.value } : shape
         )
       );
@@ -303,15 +385,17 @@ const CanvasEditor: React.FC = () => {
           strokeWidth: defaultShapeProperties.strokeWidth,
           fitToArea: false
         };
-        setShapes([...shapes, newShape]);
+        setCurrentShapes([...currentShapes, newShape]);
       };
     };
     reader.readAsDataURL(file);
   };
 
+
+
   // Función para manejar la exportación
-  const handleExport = async () => {
-    const pngData = exportToPNG(shapes, printableArea, stageRef);
+  const handleExport = async (view: 'front' | 'back') => {
+    const pngData = exportToPNG(shapes[view], printableArea, stageRef);
     if (pngData) {
       console.log('Imagen generado exitosamente');
       // Aquí posteriormente añadiremos la lógica para mostrar la preview
@@ -329,6 +413,16 @@ const CanvasEditor: React.FC = () => {
     
   };
 
+  // Función para restear el zoom
+  const resetZoom = () => {
+  const stage = stageRef.current;
+  if (!stage) return;
+  stage.scale({ x: 1, y: 1 });
+  stage.position({ x: 0, y: 0 });
+  stage.batchDraw();
+};
+
+
   return (
     <>
     <div className="flex screen bg-gray-100">
@@ -340,6 +434,7 @@ const CanvasEditor: React.FC = () => {
           width={stageDimensions.width}
           height={stageDimensions.height}
           onClick={handleStageClick}
+          onWheel={onwheel(stageRef)}
         >
           <Layer>
             {/* Imagen SVG de fondo */}
@@ -377,19 +472,19 @@ const CanvasEditor: React.FC = () => {
                 ctx.closePath();
               }}
             >
-              {shapes.map((shape) => {
+              {currentShapes.map((shape) => {
                 const commonProps = {
                   id: shape.id,
                   x: shape.x,
                   y: shape.y,
-                  fill: outOfBoundsShapes.has(shape.id) ? "#FF000080" : shape.fill,
+                  fill: shape.fill,
                   draggable: true,
                   onClick: handleSelect,
                   onDragEnd: (e: any) => {
                     const newX = e.target.x();
                     const newY = e.target.y();
-                    setShapes(
-                      shapes.map((s) =>
+                    setCurrentShapes(
+                      currentShapes.map((s) =>
                         s.id === shape.id ? { ...s, x: newX, y: newY } : s
                       )
                     );
@@ -426,6 +521,7 @@ const CanvasEditor: React.FC = () => {
                         {...commonProps}
                         text={shape.text}
                         fontSize={20}
+                        fontFamily = {fontLoaded? shape.fontFamily : "Arial"} 
                         onDblClick={(e) => handleTextDblClick(e, shape)}
                       />
                     );
@@ -464,6 +560,9 @@ const CanvasEditor: React.FC = () => {
           currentView={currentView} 
           onViewChange={setCurrentView} 
         />
+        
+        {/* Botón para resetear zoom */}
+        <ResetZoomButton onReset={resetZoom} />
 
         {/* Textarea para editar texto */}
         {textEdit.isEditing && (
@@ -512,9 +611,10 @@ const CanvasEditor: React.FC = () => {
       </div>
       <EditorOptions 
         onColorChange={() => {}} 
-        onSizeChange={() => {}} 
+        onSizeChange={setCurrentSize} 
         currentColor={""} 
-        currentSize={""} 
+        currentSize={currentSize} 
+        currentView={currentView}
         selectedShape={selectedShape || null}
         onShapePropertyChange={handleShapePropertyChange}
         onExport={handleExport}
@@ -524,4 +624,4 @@ const CanvasEditor: React.FC = () => {
   );
 };
 
-export default CanvasEditor;  
+export default CanvasEditor;

@@ -58,7 +58,7 @@ const VariantsAndLayers: React.FC<VariantsAndLayersProps> = ({
               onClick={() => onSizeChange(size)}
               className={`px-3 py-1 text-sm font-medium rounded w-12 ${
                 currentSize === size
-                  ? 'bg-olive-600 text-white'
+                  ? 'bg-pink-600 text-white'
                   : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
               }`}
             >

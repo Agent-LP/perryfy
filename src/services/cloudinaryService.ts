@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/drqiwggfb/image/upload'; // Reemplaza <your-cloud-name> con tu Cloud Name
 const UPLOAD_PRESET = 'perryfy_images'; // Reemplaza con tu Upload Preset configurado en Cloudinary
-const CLOUDINARY_API_KEY = '3yCS4Etu3rOShEjA98M8B0bmMrw'; // Reemplaza con tu API Key de Cloudinary
+//const CLOUDINARY_API_KEY = '3yCS4Etu3rOShEjA98M8B0bmMrw'; // Reemplaza con tu API Key de Cloudinary
 
 export const uploadImageToCloudinary = async (imageData: string): Promise<string | null> => {
     try {

@@ -1,4 +1,4 @@
-import { Shape } from "../types/shapes";
+/*import { Shape } from "../types/shapes";
 
 export const exportToPNG = (
   shapes: Shape[],
@@ -55,3 +55,102 @@ export const exportToPNG = (
   return undefined;
 };
 
+*/
+
+import Konva from "konva";
+import { Shape } from "../types/shapes";
+
+export const exportToPNG = (
+  shapes: Shape[],
+  printableArea: { width: number; height: number },
+  stageRef: any
+): string | undefined => {
+  try {
+    // Crear un contenedor temporal
+    const container = document.createElement("div");
+
+    // Crear un nuevo stage temporal solo para exportar los shapes recibidos
+    const tempStage = new Konva.Stage({
+      container,
+      width: printableArea.width,
+      height: printableArea.height,
+    });
+
+    const tempLayer = new Konva.Layer();
+
+    // Agregar los shapes al layer temporal
+    shapes.forEach((shape) => {
+      let konvaShape: Konva.Shape | null = null;
+      switch (shape.type) {
+        case "rect":
+          konvaShape = new Konva.Rect({
+            x: shape.x - (stageRef.current ? (stageRef.current.width() - printableArea.width) / 2 : 0),
+            y: shape.y - (stageRef.current ? (stageRef.current.height() - printableArea.height) / 2 : 0),
+            width: shape.width,
+            height: shape.height,
+            fill: shape.fill,
+            stroke: shape.stroke,
+            strokeWidth: shape.strokeWidth,
+            cornerRadius: shape.cornerRadius,
+          });
+          break;
+        case "circle":
+          konvaShape = new Konva.Circle({
+            x: shape.x - (stageRef.current ? (stageRef.current.width() - printableArea.width) / 2 : 0),
+            y: shape.y - (stageRef.current ? (stageRef.current.height() - printableArea.height) / 2 : 0),
+            radius: shape.radius,
+            fill: shape.fill,
+            stroke: shape.stroke,
+            strokeWidth: shape.strokeWidth,
+          });
+          break;
+        case "text":
+          konvaShape = new Konva.Text({
+            x: shape.x - (stageRef.current ? (stageRef.current.width() - printableArea.width) / 2 : 0),
+            y: shape.y - (stageRef.current ? (stageRef.current.height() - printableArea.height) / 2 : 0),
+            text: shape.text,
+            fontSize: 20,
+            fontFamily: shape.fontFamily || "Arial",
+            fill: shape.fill,
+          });
+          break;
+        case "image":
+          // Para imágenes, necesitas cargar la imagen antes de exportar
+          // Aquí solo se soporta si la imagen ya está cargada en el shape.imageUrl
+          if (shape.imageUrl) {
+            const img = new window.Image();
+            img.src = shape.imageUrl;
+            konvaShape = new Konva.Image({
+              x: shape.x - (stageRef.current ? (stageRef.current.width() - printableArea.width) / 2 : 0),
+              y: shape.y - (stageRef.current ? (stageRef.current.height() - printableArea.height) / 2 : 0),
+              width: shape.width,
+              height: shape.height,
+              image: img,
+            });
+          }
+          break;
+        default:
+          break;
+      }
+      if (konvaShape) tempLayer.add(konvaShape);
+    });
+
+    tempStage.add(tempLayer);
+
+    // Exportar el área imprimible como PNG
+    const dataURL = tempStage.toDataURL({
+      mimeType: "image/png",
+      quality: 1.0,
+      pixelRatio: 2,
+    });
+
+    // Limpiar
+    tempStage.destroy();
+    container.remove();
+
+    return dataURL;
+  } catch (error) {
+    console.error("Error exporting to PNG:", error);
+  }
+  return undefined;
+};

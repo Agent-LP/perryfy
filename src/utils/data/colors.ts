@@ -20,4 +20,5 @@ export const defaultShapeProperties = {
   strokeWidth: 2,
   cornerRadius: 0,
   fitToArea: false,
+  fontFamily: 'Arial'
 }; 

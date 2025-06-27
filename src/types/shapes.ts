@@ -11,6 +11,7 @@ export type Shape = {
   radius?: number;
   cornerRadius?: number;
   text?: string;
+  fontFamily?: string;
   imageUrl?: string;
   fitToArea: boolean;
 }; 
