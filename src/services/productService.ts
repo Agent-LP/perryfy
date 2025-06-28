@@ -5,7 +5,7 @@ export interface Product {
   name: string;
   price: number;
   originalPrice?: number;
-  image: string;
+  images: Array<string>;
   category: string;
   inStock?: boolean;
 
@@ -20,7 +20,7 @@ export const getAllProducts = async (): Promise<Product[]> => {
     name: p.product_name || p.name,
     price: p.price,
     originalPrice: p.originalPrice,
-    image: p.imageUrls?.[0] || '',
+    images: p.imageUrls || '',
     category: p.category || 'General',
     inStock: p.stock > 0
   }));

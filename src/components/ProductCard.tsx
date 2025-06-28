@@ -6,7 +6,7 @@ interface Product {
   name: string;
   price: number;
   originalPrice?: number;
-  image: string;
+  images: Array<string>;
   category: string;
   inStock?: boolean;
 
@@ -44,8 +44,28 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <div className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group ${className}`}>
       <div className="relative overflow-hidden">
         {/* Product Image */}
-        <div className="w-full h-48 bg-gray-200 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
-          <span className="text-gray-500 text-sm">Imagen del producto</span>
+        <div className="w-full h-48 bg-gray-200 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center relative overflow-hidden">
+          {product.images.length > 0 && (
+            <>
+              {/* Primera imagen (por defecto) */}
+              <img 
+                src={product.images[0]} 
+                alt={product.name}
+                className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
+              />
+              {/* Segunda imagen (en hover) */}
+              {product.images.length > 1 && (
+                <img 
+                  src={product.images[1]} 
+                  alt={product.name}
+                  className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                />
+              )}
+            </>
+          )}
+          {product.images.length === 0 && (
+            <span className="text-gray-500 text-sm">Imagen del producto</span>
+          )}
         </div>
         
         {/* Badges */}
@@ -58,7 +78,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
         
         {/* Stock Status */}
-        {!product.inStock && (
+        {!product.inStock  && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
               Agotado

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from './generic/Button';
 
 interface HomeHeaderProps {
@@ -10,10 +10,13 @@ interface HomeHeaderProps {
 const HomeHeader: React.FC<HomeHeaderProps> = ({ cartCount, onSearch, userName }) => {
   const [search, setSearch] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(search);
-  };
+  useEffect(()=>{
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      onSearch(search);
+    };
+    handleSubmit(search);
+  },[search]
 
   return (
     <header className="bg-[#004E89] text-white shadow-lg sticky top-0 z-50">
