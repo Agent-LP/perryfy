@@ -10,13 +10,19 @@ interface HomeHeaderProps {
 const HomeHeader: React.FC<HomeHeaderProps> = ({ cartCount, onSearch, userName }) => {
   const [search, setSearch] = useState('');
 
-  useEffect(()=>{
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
+  // Búsqueda automática con debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
       onSearch(search);
-    };
-    handleSubmit(search);
-  },[search]
+    }, 300); // Espera 300ms después de que el usuario deje de escribir
+
+    return () => clearTimeout(timeoutId);
+  }, [search, onSearch]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(search);
+  };
 
   return (
     <header className="bg-[#004E89] text-white shadow-lg sticky top-0 z-50">
@@ -42,7 +48,6 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ cartCount, onSearch, userName }
               className="w-full px-4 py-2 pl-10 pr-4 text-gray-900 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-[#3A86FF]"
               tabIndex={0}
               aria-label="Buscar productos"
-              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(search); }}
             />
             <button
               type="submit"
