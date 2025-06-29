@@ -1,8 +1,7 @@
-
 import Header from '../components/Header';
-
 import Button from '../components/generic/Button';
 import { useCart } from '../context/CartContext';
+import { useNavigate } from 'react-router-dom';
 
 interface Product {
   id: number;
@@ -18,11 +17,9 @@ interface Product {
   isOnSale?: boolean;
 }
 
-
-
 export const LandingPage = () => {
   //const { state: cartState, addItem } = useCart();
-
+  const navigate = useNavigate();
 
   {/*const handleAddToCart = (product: Product) => {
     addItem({
@@ -35,13 +32,19 @@ export const LandingPage = () => {
   };*/}
 
   const handleLogin = () => {
-    // TODO: Implementar login
-    console.log('Login clicked');
+    navigate('/login');
   };
 
   const handleSignUp = () => {
-    // TODO: Implementar registro
-    console.log('Sign up clicked');
+    navigate('/register');
+  };
+
+  const handleHome = () => {
+    navigate('/home');
+  };
+
+  const handleMerchindiserDashboard = () => {
+    navigate('/merchandiser');
   };
 
   return (
@@ -63,10 +66,10 @@ export const LandingPage = () => {
             Sin stock, sin complicaciones, solo resultados.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="primary" size="lg">
+            <Button variant="primary" size="lg" onClick={handleHome}>
               Empieza a diseñar
             </Button>
-            <Button variant="outline" size="lg">
+            <Button variant="outline" size="lg" onClick={handleHome}>
               Ver productos
             </Button>
           </div>
@@ -127,7 +130,7 @@ export const LandingPage = () => {
             Crea tu tienda y empieza a vender sin preocuparte por el stock. 
             Nosotros nos encargamos de todo.
           </p>
-          <Button variant="primary" size="lg">
+          <Button variant="primary" size="lg" onClick={handleMerchindiserDashboard}>
             Quiero vender
           </Button>
         </div>

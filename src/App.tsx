@@ -1,17 +1,15 @@
-
 import './App.css';
-import { LandingPage } from './pages/LandingPage';
+import { BrowserRouter } from 'react-router-dom';
+import AppRouter from './router/AppRouter';
 import { CartProvider } from './context/CartContext';
-import HomePage from './pages/HomePage';
-import MerchandiserDashboardPage from './pages/MerchandiserDashboardPage';
-import RegisterPage from './pages/RegisterPage';
-import LoginPage from './pages/LoginPage';
 
 function App() {
   return (
-    <>
-      <RegisterPage/>
-    </>
+    <BrowserRouter>
+      <CartProvider>
+        <AppRouter />
+      </CartProvider>
+    </BrowserRouter>
   );
 }
 

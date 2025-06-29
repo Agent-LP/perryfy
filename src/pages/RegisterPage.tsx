@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { register } from '../services/authService';
+import { register, setUserData } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
 const RegisterPage: React.FC = () => {
@@ -21,9 +21,9 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = await register({ email, password, firstName, lastName });
-      localStorage.setItem('perryfy_token', token);
-      navigate('/');
+      const userResponse = await register({ email, password, firstName, lastName });
+      setUserData(userResponse);
+      navigate('/home');
     } catch (err: any) {
       setError(err.message || 'Error al registrarse');
     } finally {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { login } from '../services/authService';
+import { login, setUserData, getUserRoles } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
 const collageImages = [
@@ -23,10 +23,20 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = await login(email, password);
-      localStorage.setItem('perryfy_token', token);
-      // Redirigir a dashboard o home
-      navigate('/');
+      const userResponse = await login(email, password);
+      
+      // Guardar token, userId y roles
+      setUserData(userResponse)
+      if (getUserRoles().length > 1){
+      // Redirigir a home
+        navigate('/home');
+      } else if (getUserRoles()[0] === "merchandiser"){
+        //dirigir al dashboard
+        navigate('/merchandiser');
+      } else {
+        navigate('/home');
+
+      }
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
     } finally {
