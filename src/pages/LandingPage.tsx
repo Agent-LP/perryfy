@@ -1,6 +1,6 @@
-import { useState } from 'react';
+
 import Header from '../components/Header';
-import ProductCard from '../components/ProductCard';
+
 import Button from '../components/generic/Button';
 import { useCart } from '../context/CartContext';
 
@@ -18,111 +18,13 @@ interface Product {
   isOnSale?: boolean;
 }
 
-interface Testimonial {
-  id: number;
-  name: string;
-  role: string;
-  content: string;
-  avatar: string;
-}
 
-const featuredProducts: Product[] = [
-  {
-    id: 1,
-    name: "Polera Personalizada Premium",
-    price: 85,
-    originalPrice: 120,
-    image: "/api/placeholder/300/300",
-    category: "Ropa",
-    rating: 4.5,
-    reviewCount: 128,
-    inStock: true,
-    isNew: true,
-    isOnSale: true
-  },
-  {
-    id: 2,
-    name: "Taza Personalizada",
-    price: 25,
-    image: "/api/placeholder/300/300",
-    category: "Accesorios",
-    rating: 4.2,
-    reviewCount: 89,
-    inStock: true
-  },
-  {
-    id: 3,
-    name: "Gorra Bordada",
-    price: 45,
-    originalPrice: 60,
-    image: "/api/placeholder/300/300",
-    category: "Ropa",
-    rating: 4.7,
-    reviewCount: 156,
-    inStock: true,
-    isOnSale: true
-  },
-  {
-    id: 4,
-    name: "Stickers Personalizados",
-    price: 15,
-    image: "/api/placeholder/300/300",
-    category: "Accesorios",
-    rating: 4.0,
-    reviewCount: 67,
-    inStock: true
-  }
-];
-
-const testimonials: Testimonial[] = [
-  {
-    id: 1,
-    name: "María González",
-    role: "Emprendedora",
-    content: "Perryfy me ayudó a crear mi marca personal. Los productos son de excelente calidad y el proceso es súper fácil.",
-    avatar: "/api/placeholder/60/60"
-  },
-  {
-    id: 2,
-    name: "Carlos Mendoza",
-    role: "Diseñador",
-    content: "La herramienta de diseño es increíble. Puedo crear productos únicos para mis clientes sin complicaciones.",
-    avatar: "/api/placeholder/60/60"
-  },
-  {
-    id: 3,
-    name: "Ana Torres",
-    role: "Influencer",
-    content: "Vendo mi merch personalizado y mis seguidores lo aman. Perryfy hace todo el trabajo pesado por mí.",
-    avatar: "/api/placeholder/60/60"
-  }
-];
-
-const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => (
-  <div className="bg-white p-6 rounded-xl shadow-lg">
-    <div className="flex items-center mb-4">
-      <div className="w-12 h-12 bg-gray-300 rounded-full mr-3"></div>
-      <div>
-        <h4 className="font-semibold text-[#2D3436]">{testimonial.name}</h4>
-        <p className="text-sm text-[#555]">{testimonial.role}</p>
-      </div>
-    </div>
-    <p className="text-[#2D3436] italic">"{testimonial.content}"</p>
-  </div>
-);
 
 export const LandingPage = () => {
-  const [email, setEmail] = useState('');
   //const { state: cartState, addItem } = useCart();
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implementar lógica de newsletter
-    console.log('Newsletter signup:', email);
-    setEmail('');
-  };
 
-  const handleAddToCart = (product: Product) => {
+  {/*const handleAddToCart = (product: Product) => {
     addItem({
       id: product.id,
       name: product.name,
@@ -130,17 +32,7 @@ export const LandingPage = () => {
       image: product.image,
       category: product.category
     });
-  };
-
-  const handleViewProduct = (product: Product) => {
-    // TODO: Navegar a la página del producto
-    console.log('Ver producto:', product);
-  };
-
-  const handleSearch = (query: string) => {
-    // TODO: Implementar búsqueda
-    console.log('Búsqueda:', query);
-  };
+  };*/}
 
   const handleLogin = () => {
     // TODO: Implementar login
@@ -240,57 +132,7 @@ export const LandingPage = () => {
           </Button>
         </div>
       </section>
-      {/* 
-      {/* Testimonials Section 
-      <section id="testimonios" className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-[#2D3436] mb-4">
-              Lo que dicen nuestros clientes
-            </h3>
-            <p className="text-lg text-[#555]">
-              Historias reales de emprendedores que han crecido con Perryfy
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial) => (
-              <TestimonialCard key={testimonial.id} testimonial={testimonial} />
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Newsletter Section 
-      <section className="bg-[#F8F9FA] py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="text-3xl font-bold text-[#2D3436] mb-4">
-            Mantente actualizado
-          </h3>
-          <p className="text-lg text-[#555] mb-8">
-            Recibe las últimas noticias, ofertas especiales y consejos para emprendedores
-          </p>
-          
-          <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Tu correo electrónico"
-              className="flex-1 px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3A86FF] focus:border-transparent"
-              required
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-            >
-              Suscribirse
-            </Button>
-          </form>
-        </div>
-      </section>
-*/}
       {/* Footer */}
       <footer className="bg-[#2D3436] text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
