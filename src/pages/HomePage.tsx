@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import HomeHeader from '../components/HomeHeader';
 import ProductCard from '../components/ProductCard';
-import { getAllProducts, Product } from '../services/productService';
+import { Colors, getAllProducts,  PrintAreas,  ProductMapping } from '../services/productService';
+import { useNavigate } from 'react-router-dom';
+import { getUserName } from '../services/authService';
 
 // Hardcodear usuario y categorías por ahora
-const USER_NAME = 'Samuel';
 const CATEGORIES = [
   'Home',
   'Fashion',
@@ -12,15 +13,18 @@ const CATEGORIES = [
   'Deportes',
   'Ropa',
   'Posters',
+  'Poleras',
 ];
 
 const HomePage: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductMapping[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Home');
   const [cart, setCart] = useState<{ [id: number]: number }>({});
+  const navigate = useNavigate();
+
 
   // Fetch products from API
   useEffect(() => {
@@ -29,12 +33,15 @@ const HomePage: React.FC = () => {
       setError(null);
       try {
         const data = await getAllProducts();
+        console.log(data)
         setProducts(data);
+
       } catch (err: any) {
         setError(err.message || 'Error desconocido');
       } finally {
         setLoading(false);
       }
+      
     };
     fetchProducts();
   }, []);
@@ -42,7 +49,9 @@ const HomePage: React.FC = () => {
   // Filtrar productos por búsqueda y categoría
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      const matchesCategory = selectedCategory === 'Home' || p.category === selectedCategory;
+      const matchesCategory = selectedCategory === "Home" || p.categories.some(category => 
+        category === selectedCategory
+      );
       const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
       return matchesCategory && matchesSearch;
     });
@@ -51,8 +60,11 @@ const HomePage: React.FC = () => {
   // Handlers
   const handleSearch = (query: string) => setSearch(query);
   const handleCategory = (cat: string) => setSelectedCategory(cat);
-  const handleAddToCart = (product: Product) => {
-    setCart((prev) => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }));
+  const handleCreateDesign = (productId: number, productImages: string[], printfulProductId: number, firstColor: Colors,printAreas: PrintAreas ) => navigate(`/designer/${productId}` ,{
+    state:{productImages,printfulProductId,firstColor,printAreas}
+  })
+  const handleAddToCart = (product: ProductMapping) => {
+    setCart((prev) => ({ ...prev, [product.productId]: (prev[product.productId] || 0) + 1 }));
   };
 
   // Contador de carrito
@@ -60,11 +72,12 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#2D3436] font-sans">
+      
       {/* Header */}
       <HomeHeader
         cartCount={cartCount}
         onSearch={handleSearch}
-        userName={USER_NAME}
+        userName={getUserName()}
       />  
       
       {/* Layout principal */}
@@ -101,9 +114,10 @@ const HomePage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {filteredProducts.map((product) => (
                 <ProductCard
-                  key={product.id}
+                  key={product.productId}
                   product={product}
                   onAddToCart={handleAddToCart}
+                  onCreateDesign={handleCreateDesign}
                   showAddToCart={true}
                 />
               ))}

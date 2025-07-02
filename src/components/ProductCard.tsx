@@ -1,21 +1,12 @@
 import React from 'react';
 import Button from './generic/Button';
+import {  Colors, PrintAreas, ProductMapping } from '../services/productService';
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  images: Array<string>;
-  category: string;
-  inStock?: boolean;
-
-}
 
 interface ProductCardProps {
-  product: Product;
-  onAddToCart?: (product: Product) => void;
-  onViewProduct?: (product: Product) => void;
+  product: ProductMapping;
+  onAddToCart?: (product: ProductMapping) => void;
+  onCreateDesign?: (productId: number, productImages: string[], printfulProductId:number, firstColor:Colors, printAreas: PrintAreas) => void;
   showAddToCart?: boolean;
   className?: string;
 }
@@ -23,19 +14,22 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onAddToCart,
-  onViewProduct,
+  onCreateDesign,
   showAddToCart = true,
   className = '',
 }) => {
+
+
   const handleAddToCart = () => {
     if (onAddToCart) {
       onAddToCart(product);
     }
   };
 
-  const handleViewProduct = () => {
-    if (onViewProduct) {
-      onViewProduct(product);
+  const handleViewProductDesigner = () => {
+    if (onCreateDesign) {
+      console.log(product.colors[0].hexadecimal)
+      onCreateDesign(product.productId, product.imageUrls, product.printfulProductId, product.colors[0], product.printAreas[0]);
     }
   };
 
@@ -45,25 +39,25 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div className="relative overflow-hidden">
         {/* Product Image */}
         <div className="w-full h-48 bg-gray-200 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center relative overflow-hidden">
-          {product.images.length > 0 && (
+          {product.imageUrls.length > 0 && (
             <>
               {/* Primera imagen (por defecto) */}
               <img 
-                src={product.images[0]} 
+                src={product.imageUrls[0]} 
                 alt={product.name}
                 className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
               />
               {/* Segunda imagen (en hover) */}
-              {product.images.length > 1 && (
+              {product.imageUrls.length > 1 && (
                 <img 
-                  src={product.images[1]} 
+                  src={product.imageUrls[1]} 
                   alt={product.name}
                   className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                 />
               )}
             </>
           )}
-          {product.images.length === 0 && (
+          {product.imageUrls.length === 0 && (
             <span className="text-gray-500 text-sm">Imagen del producto</span>
           )}
         </div>
@@ -71,10 +65,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {/* Badges */}
         
         {/* Category Badge */}
-        <div className="absolute top-2 right-2">
-          <span className="bg-[#004E89] text-white px-2 py-1 rounded-full text-xs font-medium">
-            {product.category}
+        <div className="absolute top-2 right-2 flex flex-col">
+        {product.categories.map((category)=>(
+          <span key={category} className="bg-[#004E89] text-white px-2 py-1 rounded-full text-xs font-medium mb-4">
+            {category}
           </span>
+          ))}
         </div>
         
         {/* Stock Status */}
@@ -107,10 +103,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Button
             variant="secondary"
             size="sm"
-            onClick={handleViewProduct}
+            onClick={handleViewProductDesigner}
             className="flex-1"
           >
-            Ver producto
+            Crear Diseño
           </Button>
           {showAddToCart && product.inStock && (
             <Button

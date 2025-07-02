@@ -16,9 +16,9 @@ export async function login(email: string, password: string): Promise<UserRespon
   }
 }
 
-export async function register({ email, password, firstName, lastName }: { email: string; password: string; firstName: string; lastName: string; }): Promise<UserResponse> {
+export async function register({ email, password, name, lastname }: { email: string; password: string; name: string; lastname: string; }): Promise<UserResponse> {
   try {
-    const res = await axios.post(`${API_URL}/register`, { email, password, firstName, lastName });
+    const res = await axios.post(`${API_URL}/register`, { email, password, name, lastname });
     if (res.data) {
       return res.data;
     }
@@ -31,6 +31,7 @@ export async function register({ email, password, firstName, lastName }: { email
 // Utilidades para manejar datos de usuario en localStorage (por si se quiere usar en otros contextos)
 export function setUserData(user: UserResponse) {
   localStorage.setItem('perryfy_user_token', user.token);
+  localStorage.setItem('perryfy_user_user_name', user.userName);
   localStorage.setItem('perryfy_user_id', user.userId.toString());
   localStorage.setItem('perryfy_user_roles', JSON.stringify(user.userRoles.map(r => r.role)));
 }
@@ -38,6 +39,7 @@ export function setUserData(user: UserResponse) {
 // Utilidad para limpiar el token (logout)
 export function clearUserData() {
   localStorage.removeItem('perryfy_user_token');
+  localStorage.removeItem('perryfy_user_user_name');
   localStorage.removeItem('perryfy_user_id');
   localStorage.removeItem('perryfy_user_roles');
 }
@@ -55,4 +57,6 @@ export function getUserRoles(): string[] {
   return roles ? JSON.parse(roles) : [];
 }
 
-
+export function getUserName(): string{
+  return localStorage.getItem('perryfy_user_user_name') || "NoName";
+}

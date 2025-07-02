@@ -141,7 +141,7 @@ export const exportToPNG = (
     const dataURL = tempStage.toDataURL({
       mimeType: "image/png",
       quality: 1.0,
-      pixelRatio: 2,
+      pixelRatio: 10,
     });
 
     // Limpiar

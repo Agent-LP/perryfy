@@ -3,9 +3,11 @@ import React, { useRef } from 'react';
 interface DesignToolbarProps {
   onAddShape: (type: 'rect' | 'circle' | 'text') => void;
   onImageUpload: (file: File) => void;
+  onClickBackToHome: () => void;
+
 }
 
-const DesignToolbar: React.FC<DesignToolbarProps> = ({ onAddShape, onImageUpload }) => {
+const DesignToolbar: React.FC<DesignToolbarProps> = ({ onAddShape, onImageUpload, onClickBackToHome }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageClick = () => {
@@ -28,6 +30,7 @@ const DesignToolbar: React.FC<DesignToolbarProps> = ({ onAddShape, onImageUpload
         <button 
           className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors duration-200"
           aria-label="Go back"
+          onClick={onClickBackToHome}
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 

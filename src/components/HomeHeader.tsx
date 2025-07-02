@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Button from './generic/Button';
+import { clearUserData } from '../services/authService';
+import { useNavigate } from 'react-router-dom';
 
 interface HomeHeaderProps {
   cartCount: number;
@@ -9,6 +11,7 @@ interface HomeHeaderProps {
 
 const HomeHeader: React.FC<HomeHeaderProps> = ({ cartCount, onSearch, userName }) => {
   const [search, setSearch] = useState('');
+  const navigate = useNavigate();
 
   // Búsqueda automática con debounce
   useEffect(() => {
@@ -22,6 +25,11 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ cartCount, onSearch, userName }
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(search);
+  };
+
+  const handleLogout = () => {
+    clearUserData();
+    navigate('/login');
   };
 
   return (
@@ -78,6 +86,15 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({ cartCount, onSearch, userName }
             )}
           </button>
           <span className="text-[#F8F9FA] font-semibold">{userName}</span>
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1 rounded-full bg-[#FF6B35] text-white font-semibold hover:bg-[#e65a24] focus:outline-none focus:ring-2 focus:ring-[#3A86FF] transition-colors"
+            aria-label="Cerrar sesión"
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleLogout(); }}
+          >
+            Logout
+          </button>
         </div>
       </nav>
     </header>

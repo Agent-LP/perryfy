@@ -11,6 +11,10 @@ import { uploadImageToCloudinary } from "../../services/cloudinaryService";
 import { changeFont } from "../../utils/functions/changeFont";
 import { onwheel } from "../../utils/functions/onWheel";
 import ResetZoomButton from "./ResetZoomButton";
+import { getProductById, Product } from "../../services/productService";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Color } from "fabric";
+
 
 // Componente para manejar imágenes en Konva
 const ImageShape: React.FC<{
@@ -25,6 +29,7 @@ const ImageShape: React.FC<{
     <KonvaImage
       id={shape.id}
       image={image}
+      fill={"#green"}
       x={shape.x}
       y={shape.y}
       width={shape.width}
@@ -37,6 +42,15 @@ const ImageShape: React.FC<{
 };
 
 const CanvasEditor: React.FC = () => {
+  const {productId } = useParams();
+  const location = useLocation();
+  const {productImages, printfulProductId, firstColor, printAreas} = location.state;
+
+  // TODOS LOS HOOKS DEBEN ESTAR AQUÍ AL PRINCIPIO
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<String | null>( null);
+
   const [shapes, setShapes] = useState<{ front: Shape[]; back: Shape[] }>({
     front: [],
     back: [],
@@ -44,24 +58,12 @@ const CanvasEditor: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'front' | 'back'>('front');
   const [currentSize, setCurrentSize] = useState<string>('M');
+  const [currentColor, setCurrentColor] = useState<string>(firstColor.hexadecimal);
+  const [currentColorName, setCurrentColorName] = useState<string>(firstColor.color);
   const [currentFont, setCurrentFont] = useState<string>('Arial');
   const [fontLoaded, setFontLoaded] = useState(false);
+  const navigate = useNavigate();
   
-  const currentShapes = shapes[currentView];
-  const setCurrentShapes = (newShapes: Shape[]) => {
-  setShapes((prev) => ({
-      ...prev,
-      [currentView]: newShapes,
-    }));
-  };
-
-  
-  const stageRef = useRef<any>(null);
-  const transformerRef = useRef<any>(null);
-  
-  // Get the selected shape object
-  const selectedShape = currentShapes.find(shape => shape.id === selectedId);
-
   const [textEdit, setTextEdit] = useState<{
     isEditing: boolean;
     x: number;
@@ -69,29 +71,100 @@ const CanvasEditor: React.FC = () => {
     value: string;
     id: string | null;
   }>({ isEditing: false, x: 0, y: 0, value: "", id: null });
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Cargar la imagen SVG de fondo basada en la vista actual
-  const [backgroundImage] = useImage(
-    currentView === 'front' 
-      ? "/src/utils/images/flat templates/p1adelante.svg"
-      : "/src/utils/images/flat templates/p1atras.svg"
-  );
-  
   // Estado para mantener las dimensiones del Stage
   const [stageDimensions, setStageDimensions] = useState({
     width: window.innerWidth - 300,
     height: window.innerHeight
   });
 
-  // Definir dimensiones del área imprimible
-  const printableArea = {
-    width: 90,
-    height: 100
-  };
-
   // Estado para elementos fuera del área
   const [/*outOfBoundsShapes*/, setOutOfBoundsShapes] = useState<Set<string>>(new Set());
+
+  // REFS
+  const stageRef = useRef<any>(null);
+  const transformerRef = useRef<any>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Estado para la URL de fondo actual
+  const [backgroundUrl, setBackgroundUrl] = useState<string>("/src/utils/images/Spinner@1x-1.0s-200px-200px.gif");
+
+  // COMPUTED VALUES
+  const currentShapes = shapes[currentView];
+  const selectedShape = currentShapes.find(shape => shape.id === selectedId);
+
+  // Definir dimensiones del área imprimible
+  const printableArea = {
+    width: printAreas.width,
+    height: printAreas.height
+  };
+
+  // Estado para actualizar la imagen de fondo
+  const [backgroundKey, setBackgroundKey] = useState<number>(0);
+
+  // FUNCTIONS
+  const setCurrentShapes = (newShapes: Shape[]) => {
+    setShapes((prev) => ({
+      ...prev,
+      [currentView]: newShapes,
+    }));
+  };
+
+  // Función auxiliar para obtener las coordenadas centrales del área imprimible
+  const getCenterCoordinates = () => {
+    const centerX = (stageDimensions.width - printableArea.width) / 2 + printableArea.width / 2;
+    const centerY = (stageDimensions.height - printableArea.height) / 2 + printableArea.height / 2;
+    return { x: centerX, y: centerY };
+  };
+
+  // Función para verificar si un elemento está fuera del área imprimible
+  const checkIfShapeIsOutOfBounds = (shape: Shape) => {
+    const shapeRight = shape.x + (shape.width || shape.radius || 0);
+    const shapeBottom = shape.y + (shape.height || shape.radius || 0);
+    
+    return (
+      shape.x < (stageDimensions.width - printableArea.width ) / 2||
+      shape.y < (stageDimensions.height - printableArea.height ) / 2 ||
+      shapeRight > (stageDimensions.width - printableArea.width ) / 2 + printableArea.width ||
+      shapeBottom > (stageDimensions.height - printableArea.height ) / 2 + printableArea.height
+    );
+  };
+
+  // Función para setear color y nombre de color al mismo tiempo
+  const setCurrentColorAndName = (hexadecimal: string, colorName: string) => {
+    setCurrentColor(hexadecimal);
+    setCurrentColorName(colorName);
+    setBackgroundKey(prev => prev + 1);
+    
+
+    console.log(backgroundImage)
+  };
+
+  // USE EFFECTS
+  useEffect(() => {
+    const handleFetchProduct = async()=>{
+      console.log(productImages)
+      console.log(printAreas)
+      console.log(firstColor)
+      console.log(currentColor)
+      console.log(printfulProductId)
+      console.log(backgroundImage)
+      setLoading(true);
+      setError(null)
+      try{
+        const product = await getProductById(productId!)
+        console.log(product)
+        setProduct(product)
+        
+        setCurrentSize(product.sizes[0])
+        
+      } catch (err: any){
+        setError(err  || `Error al obtener el producto${productId}`)
+      } finally {
+        setLoading(false);
+      }
+    }; handleFetchProduct()
+  },[]);
 
   // Efecto para calcular las dimensiones del Stage
   useEffect(() => {
@@ -108,37 +181,20 @@ const CanvasEditor: React.FC = () => {
   }, []);
 
   useEffect(() => { 
-
     console.log('x de la forma seleccionada:', selectedShape?.x);
     console.log('y de la forma seleccionada:', selectedShape?.y);
     console.log('width de la forma seleccionada:', selectedShape?.width);
     console.log('height de la forma seleccionada:', selectedShape?.height);
-
     console.log('medidas del area imprimible:', printableArea);
   }, [selectedShape]);
 
   // Efecto para cargar la fuente
-  // Cambia la fuente al seleccionar una diferente
   useEffect(() => {
     console.log("current font: ", currentFont);
     console.log("font cargado?: ", fontLoaded);
     changeFont(currentFont, setFontLoaded);
     console.log("font cargado? 2: ", fontLoaded);
   }, [currentFont]);
-
-  
-  // Función para verificar si un elemento está fuera del área imprimible
-  const checkIfShapeIsOutOfBounds = (shape: Shape) => {
-    const shapeRight = shape.x + (shape.width || shape.radius || 0);
-    const shapeBottom = shape.y + (shape.height || shape.radius || 0);
-    
-    return (
-      shape.x < (stageDimensions.width - printableArea.width ) / 2||
-      shape.y < (stageDimensions.height - printableArea.height ) / 2 ||
-      shapeRight > (stageDimensions.width - printableArea.width ) / 2 + printableArea.width ||
-      shapeBottom > (stageDimensions.height - printableArea.height ) / 2 + printableArea.height
-    );
-  };
 
   // Efecto para actualizar elementos fuera de bounds
   useEffect(() => {
@@ -151,12 +207,55 @@ const CanvasEditor: React.FC = () => {
     setOutOfBoundsShapes(outOfBounds);
   }, [currentShapes]);
 
-  // Función auxiliar para obtener las coordenadas centrales del área imprimible
-  const getCenterCoordinates = () => {
-    const centerX = (stageDimensions.width - printableArea.width) / 2 + printableArea.width / 2;
-    const centerY = (stageDimensions.height - printableArea.height) / 2 + printableArea.height / 2;
-    return { x: centerX, y: centerY };
-  };
+  // Actualizar el Transformer cuando se selecciona una figura
+  useEffect(() => {
+    if (!transformerRef.current || !selectedId) return;
+
+    const selectedNode = stageRef.current.findOne(`#${selectedId}`);
+    if (selectedNode) {
+      transformerRef.current.nodes([selectedNode]);
+      transformerRef.current.getLayer().batchDraw();
+    }
+  }, [selectedId]);
+
+  // Efecto para actualizar la URL de fondo cuando cambian color, vista o producto
+  useEffect(() => {
+    if (!printfulProductId || !currentColorName) {
+      setBackgroundUrl("/src/utils/images/Spinner@1x-1.0s-200px-200px.gif");
+      return;
+    }
+    const svgUrl = `https://res.cloudinary.com/drqiwggfb/image/upload/v1751205867/product${printfulProductId}_${currentView}_${currentColorName}.svg`;
+    const pngUrl = `https://res.cloudinary.com/drqiwggfb/image/upload/v1751205867/product${printfulProductId}_${currentView}_${currentColorName}.png`;
+
+    // Intentar cargar SVG primero, luego PNG
+    const testImage = (url: string) => new Promise<boolean>(resolve => {
+      const img = new window.Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
+
+    (async () => {
+      if (await testImage(svgUrl)) {
+        setBackgroundUrl(svgUrl);
+      } else if (await testImage(pngUrl)) {
+        setBackgroundUrl(pngUrl);
+      } else {
+        setBackgroundUrl("/src/utils/images/Spinner@1x-1.0s-200px-200px.gif");
+      }
+    })();
+  }, [printfulProductId, currentColorName, currentView]);
+
+  const [backgroundImage] = useImage(backgroundUrl);
+
+  // AHORA SÍ PUEDE HABER EARLY RETURNS
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   // Manejador para cambios en las propiedades de la forma
   const handleShapePropertyChange = (property: string, value: string | number | boolean) => {
@@ -298,17 +397,6 @@ const CanvasEditor: React.FC = () => {
 
   };
 
-  // Actualizar el Transformer cuando se selecciona una figura
-  useEffect(() => {
-    if (!transformerRef.current || !selectedId) return;
-
-    const selectedNode = stageRef.current.findOne(`#${selectedId}`);
-    if (selectedNode) {
-      transformerRef.current.nodes([selectedNode]);
-      transformerRef.current.getLayer().batchDraw();
-    }
-  }, [selectedId]);
-
   // Manejador de clic en una figura
   const handleSelect = (e: any) => {
     e.cancelBubble = true; // Evita que el clic llegue al Stage
@@ -319,7 +407,6 @@ const CanvasEditor: React.FC = () => {
   const handleStageClick = () => {
     setSelectedId(null);
   };
-
 
   
   // Mostrar el textarea al hacer doble clic
@@ -394,7 +481,7 @@ const CanvasEditor: React.FC = () => {
 
 
   // Función para manejar la exportación
-  const handleExport = async (view: 'front' | 'back') => {
+  const handleExport = async (view: 'front' | 'back'): Promise<string> => {
     const pngData = exportToPNG(shapes[view], printableArea, stageRef);
     if (pngData) {
       console.log('Imagen generado exitosamente');
@@ -407,11 +494,11 @@ const CanvasEditor: React.FC = () => {
         console.log('Imagen subida a Cloudinary:', imageUrl);
         return imageUrl; // Retorna el la url del SVG generado
       }
-    } else {
-      console.error('SVG data is null. Cannot upload to Cloudinary.');
     }
-    
+    throw new Error('Error al exportar imagen');
   };
+
+  const handleBackToHome = () => navigate("/home")
 
   // Función para restear el zoom
   const resetZoom = () => {
@@ -425,8 +512,9 @@ const CanvasEditor: React.FC = () => {
 
   return (
     <>
+    
     <div className="flex screen bg-gray-100">
-      <DesignToolbar onAddShape={addShape} onImageUpload={handleImageUpload} />
+      <DesignToolbar onAddShape={addShape} onImageUpload={handleImageUpload} onClickBackToHome={handleBackToHome}/>
       {/* Canvas */}
       <div className="flex-1 relative">
         <Stage
@@ -439,13 +527,26 @@ const CanvasEditor: React.FC = () => {
           <Layer>
             {/* Imagen SVG de fondo */}
             {backgroundImage && (
-              <KonvaImage
-                image={backgroundImage}
-                width={currentView === 'front' ? backgroundImage.width * 0.1 : backgroundImage.width * 0.06}
-                height={currentView === 'front' ? backgroundImage.height * 0.1 : backgroundImage.height * 0.06}
-                x={(stageDimensions.width - (currentView === 'front' ? backgroundImage.width * 0.1 : backgroundImage.width * 0.06)) / 2}
-                y={(stageDimensions.height - (currentView === 'front' ? backgroundImage.height * 0.1 : backgroundImage.height * 0.06)) / 2}
-              />
+              // Ajustar el factor de escala según el printfulProductId
+              (() => {
+                const is603 = printfulProductId === 603;
+                const isWhite = firstColor === "white";
+                const frontFactor = is603 ? 0.50 : 0.1;
+                const backFactor = is603 ? 0.50  : 0.06;
+                const factor = currentView === 'front' ? frontFactor : backFactor;
+                const width = backgroundImage.width * factor;
+                const height = backgroundImage.height * factor;
+                return (
+                  <KonvaImage
+                    key={backgroundUrl}
+                    image={backgroundImage}
+                    width={width}
+                    height={height}
+                    x={(stageDimensions.width - width) / 2}
+                    y={(stageDimensions.height - height) / 2}
+                  />
+                );
+              })()
             )}
 
             {/* Área imprimible - borde visual */}
@@ -610,14 +711,15 @@ const CanvasEditor: React.FC = () => {
         )}
       </div>
       <EditorOptions 
-        onColorChange={() => {}} 
+        onColorChange={setCurrentColorAndName} 
         onSizeChange={setCurrentSize} 
-        currentColor={""} 
+        currentColor={currentColor}
         currentSize={currentSize} 
         currentView={currentView}
         selectedShape={selectedShape || null}
         onShapePropertyChange={handleShapePropertyChange}
         onExport={handleExport}
+        product={product}
       />
     </div>
     </>

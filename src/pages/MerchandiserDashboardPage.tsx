@@ -54,9 +54,9 @@ const MerchandiserDashboardPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {filteredProducts.map((product) => (
               <MerchProductCard
-                key={product.id}
+                key={product.productId}
                 name={product.name}
-                image={product.images && product.images.length > 0 ? product.images[0] : undefined}
+                image={product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : undefined}
               />
             ))}
           </div>
@@ -70,16 +70,7 @@ const MerchandiserDashboardPage: React.FC = () => {
           onInventoryClick={handleInventoryClick}
         />
       </aside>
-      {/* Botón flotante Add */}
-      <button
-        className="fixed bottom-8 right-8 bg-[#FF6B35] text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg text-3xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-[#3A86FF] z-50"
-        aria-label="Añadir producto"
-        tabIndex={0}
-        onClick={handleAddProduct}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAddProduct(); }}
-      >
-        +
-      </button>
+      
     </div>
   );
 };

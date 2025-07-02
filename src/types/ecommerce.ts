@@ -1,19 +1,3 @@
-export interface Product {
-  id: number;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  category: string;
-  rating?: number;
-  reviewCount?: number;
-  inStock?: boolean;
-  isNew?: boolean;
-  isOnSale?: boolean;
-  description?: string;
-  tags?: string[];
-  variants?: ProductVariant[];
-}
 
 export interface ProductVariant {
   id: number;

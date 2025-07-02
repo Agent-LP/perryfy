@@ -22,7 +22,7 @@ const AppRouter = () => (
         <MerchandiserDashboardPage />
       </ProtectedRoute>
     } />
-    <Route path="/designer" element={
+    <Route path="/designer/:productId" element={
       <ProtectedRoute allowedRoles={["customer", "merchandiser"]}>
         <DesignerPage />
         </ProtectedRoute>  
